@@ -1,10 +1,10 @@
 import React from "react";
-import WeatherApp from "./WeatherApp"; // import component
+import ExpenseTracker from "./ExpenseTracker.JS"; // import component
 
 function App() {
   return (
     <div>
-      <WeatherApp />
+      <ExpenseTracker />
     </div>
   );
 }
