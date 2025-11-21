@@ -1,112 +1,93 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
-const ExpenseTracker = () => {
-  const [expenses, setExpenses] = useState([]);
-  const [amount, setAmount] = useState("");
-  const [desc, setDesc] = useState("");
-  const [type, setType] = useState("Expense");
-  const [total, setTotal] = useState(0);
+function App() {
+  const [query, setQuery] = useState("");
+  const [recipes, setRecipes] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // 🧠 Load data from localStorage on mount
-  useEffect(() => {
-    const savedExpenses = JSON.parse(localStorage.getItem("expenses"));
-    if (savedExpenses) setExpenses(savedExpenses);
-  }, []);
+  const searchRecipes = async () => {
+    if (!query.trim()) return;
 
-  // 💾 Save data to localStorage whenever expenses change
-  useEffect(() => {
-    localStorage.setItem("expenses", JSON.stringify(expenses));
-    const totalAmount = expenses.reduce(
-      (acc, curr) => (curr.type === "Income" ? acc + curr.amount : acc - curr.amount),
-      0
+    setLoading(true);
+
+    const res = await fetch(
+      `https://www.themealdb.com/api/json/v1/1/search.php?s=${query}`
     );
-    setTotal(totalAmount);
-  }, [expenses]);
+    const data = await res.json();
 
-  const addExpense = () => {
-    if (!amount || !desc) return alert("Please fill all fields!");
-    const newExpense = {
-      id: Date.now(),
-      amount: Number(amount),
-      desc,
-      type,
-    };
-    setExpenses([...expenses, newExpense]);
-    setAmount("");
-    setDesc("");
-  };
-
-  const deleteExpense = (id) => {
-    setExpenses(expenses.filter((e) => e.id !== id));
+    setRecipes(data.meals || []);
+    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 to-purple-200 flex flex-col items-center py-8">
-      <div className="bg-white shadow-xl rounded-2xl p-6 w-96">
-        <h1 className="text-2xl font-bold text-center mb-4">💰 Expense Tracker</h1>
+    <div style={styles.container}>
+      <h1 style={styles.title}>🍕 Recipes Finder</h1>
 
-        <div className="flex flex-col gap-3">
-          <input
-            type="text"
-            value={desc}
-            onChange={(e) => setDesc(e.target.value)}
-            placeholder="Description..."
-            className="border rounded-lg p-2"
-          />
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="Amount..."
-            className="border rounded-lg p-2"
-          />
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            className="border rounded-lg p-2"
-          >
-            <option>Expense</option>
-            <option>Income</option>
-          </select>
+      <div style={styles.searchBox}>
+        <input
+          type="text"
+          placeholder="Search for recipes..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          style={styles.input}
+        />
 
-          <button
-            onClick={addExpense}
-            className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700"
-          >
-            Add Entry
-          </button>
-        </div>
+        <button onClick={searchRecipes} style={styles.button}>
+          Search
+        </button>
+      </div>
 
-        <h2 className="text-xl font-semibold mt-6 text-center">
-          Total Balance:{" "}
-          <span className={total >= 0 ? "text-green-600" : "text-red-600"}>
-            ₹{total}
-          </span>
-        </h2>
+      {loading && <h3>Loading...</h3>}
 
-        <ul className="mt-4 max-h-60 overflow-y-auto">
-          {expenses.map((e) => (
-            <li
-              key={e.id}
-              className={`flex justify-between items-center border-b p-2 ${
-                e.type === "Income" ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              <span>
-                {e.desc} — ₹{e.amount}
-              </span>
-              <button
-                onClick={() => deleteExpense(e.id)}
-                className="text-gray-500 hover:text-black"
+      <div style={styles.grid}>
+        {recipes.length > 0 ? (
+          recipes.map((recipe) => (
+            <div key={recipe.idMeal} style={styles.card}>
+              <img src={recipe.strMealThumb} alt="" style={styles.image} />
+
+              <h3 style={styles.recipeTitle}>{recipe.strMeal}</h3>
+
+              <p style={styles.category}>Category: {recipe.strCategory}</p>
+
+              <a
+                href={recipe.strYoutube}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={styles.link}
               >
-                ❌
-              </button>
-            </li>
-          ))}
-        </ul>
+                ▶ Watch Recipe
+              </a>
+            </div>
+          ))
+        ) : (
+          !loading && <p>No recipes found.</p>
+        )}
       </div>
     </div>
   );
+}
+
+const styles = {
+  container: { padding: "20px", textAlign: "center" },
+  title: { fontSize: "32px", marginBottom: "20px" },
+  searchBox: { display: "flex", justifyContent: "center", gap: "10px" },
+  input: { padding: "10px", fontSize: "16px", width: "260px" },
+  button: { padding: "10px 20px", cursor: "pointer", fontSize: "16px" },
+  grid: {
+    marginTop: "30px",
+    display: "grid",
+    gap: "20px",
+    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+  },
+  card: {
+    border: "1px solid #ccc",
+    padding: "15px",
+    borderRadius: "15px",
+  },
+  image: { width: "100%", borderRadius: "10px" },
+  recipeTitle: { fontSize: "20px", margin: "10px 0" },
+  category: { color: "gray" },
+  link: { marginTop: "10px", display: "inline-block", textDecoration: "none" },
 };
 
-export default ExpenseTracker;
+export default App;
